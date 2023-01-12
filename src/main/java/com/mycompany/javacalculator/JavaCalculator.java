@@ -4,6 +4,12 @@
 
 package com.mycompany.javacalculator;
 
+import com.mycompany.javacalculator.logic.Calculation;
+import com.mycompany.javacalculator.ui.RowFactory;
+import com.mycompany.javacalculator.logic.Operands;
+import com.mycompany.javacalculator.ui.OpButton;
+import com.mycompany.javacalculator.ui.NumButton;
+import com.mycompany.javacalculator.ui.ButtonRow;
 import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -12,7 +18,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import com.mycompany.javacalculator.Operands.Operand;
+import com.mycompany.javacalculator.logic.Operands.Operand;
 import java.util.Collection;
 import javax.swing.JButton;
 
@@ -21,16 +27,21 @@ import javax.swing.JButton;
  * @author mikayladobson
  */
 public class JavaCalculator implements ActionListener {
-    private float storedNum = 0;
-    private float receivedNum = 0;
+    private double storedNum = 0;
+    private double receivedNum = 0;
     private String receivedData = "";
-    private Operand operand = null;
+    private Operand operand = Operand.READ_NEXT;
+    private Operand storedOperand = null;
+    
+    private int wholeNums;
+    private int decimalNums;
     
     private final JFrame frame;
     private final JPanel mainPanel;
     
     private final JPanel calculatorScreen;
-    private final JLabel screenText;
+    private final JLabel numScreenText;
+    private final JLabel operandScreenText;
     
     private final NumButton btn1;
     private final NumButton btn2;
@@ -50,17 +61,20 @@ public class JavaCalculator implements ActionListener {
     private final OpButton btnExponent;
     private final OpButton btnEquals;
     private final OpButton btnDecimal;
+    private final OpButton btnClear;
     
     public JavaCalculator() {
         frame = new JFrame();
-        screenText = new JLabel("Initial value");
+        numScreenText = new JLabel(String.valueOf(storedNum));
+        operandScreenText = new JLabel();
         
         mainPanel = new JPanel();
         mainPanel.setBorder(BorderFactory.createEmptyBorder(100,100,100,100));
         mainPanel.setLayout(new GridLayout(4, 4));
         
         calculatorScreen = new JPanel();
-        calculatorScreen.add(screenText);
+        calculatorScreen.add(numScreenText);
+        calculatorScreen.add(operandScreenText);
         calculatorScreen.setBackground(Color.GRAY);
         
         mainPanel.add(calculatorScreen);
@@ -83,9 +97,10 @@ public class JavaCalculator implements ActionListener {
         btnExponent = new OpButton(Operand.EXPONENT, this);
         btnEquals = new OpButton(Operand.EQUALS, this);
         btnDecimal = new OpButton(Operand.DECIMAL, this);
+        btnClear = new OpButton(Operand.CLEAR, this);
 
         NumButton[] numBtns = { btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn0 };
-        OpButton[] opBtns = { btnPlus, btnMinus, btnMultiply, btnDivide, btnExponent, btnEquals, btnDecimal };
+        OpButton[] opBtns = { btnPlus, btnMinus, btnMultiply, btnDivide, btnExponent, btnEquals, btnDecimal, btnClear };
 
         RowFactory rowFactory = new RowFactory(numBtns);
         Collection<ButtonRow> btnRows = rowFactory.getRows();
@@ -115,7 +130,84 @@ public class JavaCalculator implements ActionListener {
     
     @Override
     public void actionPerformed(ActionEvent e) {
+        // get the object declaration and label of the event source
         JButton source = (JButton)e.getSource();
-        screenText.setText(source.getText());
+        String targetValue = source.getText();
+        String concatenatedNums = "";
+        
+        if (source instanceof NumButton) {
+            // while decimal mode is active, only add digits after decimal place
+            // to do: limit to x number of decimal places?
+            if (this.operand == Operand.DECIMAL) {
+                if (decimalNums == 0) {
+                    concatenatedNums = String.valueOf(targetValue);
+                } else {
+                    concatenatedNums = String.valueOf(decimalNums) + String.valueOf(targetValue);
+                }
+                
+                decimalNums = Integer.parseInt(concatenatedNums);
+            } else {
+                if (wholeNums == 0) {
+                    concatenatedNums = String.valueOf(targetValue);
+                } else {
+                    concatenatedNums = String.valueOf(wholeNums) + String.valueOf(targetValue);
+                }
+                
+                wholeNums = Integer.parseInt(concatenatedNums);
+            }
+            
+            storedNum = (float)wholeNums + (float)(decimalNums / 100);
+        } else if (source instanceof OpButton) {
+            OpButton opButton = (OpButton)source;
+            this.operand = opButton.getOperand();
+            
+            switch (this.operand) {
+                case CLEAR -> {
+                    storedNum = 0;
+                    wholeNums = 0;
+                    decimalNums = 0;
+                    this.operand = null;
+                    operandScreenText.setText("");
+                    break;
+                }
+                case EQUALS -> {
+                    String resultAsString = String.valueOf(storedNum) + " " + String.valueOf(receivedNum) + " " + String.valueOf(storedNum + receivedNum);
+                    operandScreenText.setText(resultAsString);
+                    
+                    double result = new Calculation(receivedNum, storedNum, this.storedOperand).getResult();
+                    storedNum = result;
+                    receivedNum = 0;
+                    
+                    int idxOfDecimal = resultAsString.indexOf('.');
+                    wholeNums = Integer.parseInt(resultAsString.substring(0, idxOfDecimal));
+                    decimalNums = Integer.parseInt(resultAsString.substring(idxOfDecimal + 1));
+                    this.operand = Operand.READ_NEXT;
+                    break;
+                }
+                case DECIMAL, READ_NEXT -> {
+                    break;
+                }
+                default -> {
+                    receivedNum = storedNum;
+                    storedNum = 0;
+                    wholeNums = 0;
+                    decimalNums = 0;
+                    this.storedOperand = this.operand;
+                    this.operand = Operand.READ_NEXT;
+                    break;
+                }
+            }
+        }
+        
+        
+        // numScreenText.setText(String.valueOf(storedNum));
+        numScreenText.setText(String.format("%s.%s", wholeNums, decimalNums));
+        
+        if (this.operand == null) {
+            storedNum = 0;
+            wholeNums = 0;
+            decimalNums = 0;
+            this.storedOperand = null;
+        }
     }
 }

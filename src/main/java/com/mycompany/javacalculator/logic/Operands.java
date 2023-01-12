@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package com.mycompany.javacalculator;
+package com.mycompany.javacalculator.logic;
 
 /**
  *
@@ -11,7 +11,7 @@ package com.mycompany.javacalculator;
 public class Operands {
     public enum Operand {
         ADD, SUBTRACT, MULTIPLY, DIVIDE, EXPONENT,
-        EQUALS, DECIMAL
+        EQUALS, DECIMAL, CLEAR, READ_NEXT
     }
     
     public static String toLabel(Operand input) {
@@ -36,6 +36,12 @@ public class Operands {
             }
             case EQUALS -> {
                 return "=";
+            }
+            case CLEAR -> {
+                return "c";
+            }
+            case READ_NEXT -> {
+                return "...";
             }
             default -> {
                 throw new Error("Invalid operand input");

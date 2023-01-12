@@ -2,10 +2,12 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package com.mycompany.javacalculator;
+package com.mycompany.javacalculator.ui;
 
+import com.mycompany.javacalculator.JavaCalculator;
+import com.mycompany.javacalculator.logic.Operands;
 import javax.swing.JButton;
-import com.mycompany.javacalculator.Operands.Operand;
+import com.mycompany.javacalculator.logic.Operands.Operand;
 
 /**
  *
@@ -18,5 +20,9 @@ public class OpButton extends JButton {
         this.operand = operand;
         this.addActionListener(calculator);
         this.setText(Operands.toLabel(operand));
+    }
+    
+    public Operand getOperand() {
+        return operand;
     }
 }
